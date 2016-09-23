@@ -1,0 +1,6 @@
+name = MS Dynamics experiments
+description = MS Dynamics experiments
+core = 7.x
+package = Ivan
+; dependencies[] = 
+

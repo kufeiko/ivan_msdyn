@@ -1,0 +1,145 @@
+<?php
+
+/* hook_menu() */
+function ivan_msdyn_menu() {
+  $items = array();
+  $items['admin/config/services/msdyn'] = array(
+    'title' => 'Setting for MSDyn',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('_ivan_msdyn_settings_form'),
+    'access arguments' => array('administer site configuration'),
+  );
+  $items['admin/config/services/msdyn/settings'] = array(
+    'title' => 'Settings',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'weight' => -5,
+  );
+  $items['admin/config/services/msdyn/test'] = array(
+    'title' => 'Make a test',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('_ivan_msdyn_test_form'),
+    'access arguments' => array('administer site configuration'),
+    'type' => MENU_LOCAL_TASK,
+  );
+  return $items;
+}
+
+/* 
+ * callback for settings form 
+ */
+function _ivan_msdyn_settings_form($form, &$form_state) {
+  // url: http://s-cnect-crmdev1:5555/SRM/
+  // domain\user:
+  // pass:
+  $form = array();
+  $form['msdyn_user'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Username'),
+    '#default_value' => variable_get('msdyn_user', ''),
+    '#description' => t('This may need to include domain, e.g. domain\user.'),
+  );
+  $form['msdyn_pass'] = array(
+    '#type' => 'password',
+    '#title' => t('Password'),
+    '#description' => t('Leave empty to keep the current password. Type a new one to update.'),
+  );
+  $form['msdyn_endpoint'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Endpoint URL'),
+    '#default_value' => variable_get('msdyn_endpoint', ''),
+  );
+  $form['msdyn_submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Heat!'),
+  );
+
+  return $form;
+}
+
+/* 
+ * Submit for settings form 
+ */
+function _ivan_msdyn_settings_form_submit($form, &$form_state) {
+  variable_set('msdyn_user', $form_state['values']['msdyn_user']);
+  if ($form_state['values']['msdyn_pass']) {
+    dpm("changing pass");
+    variable_set('msdyn_pass', $form_state['values']['msdyn_pass']);
+  }
+  variable_set('msdyn_endpoint', $form_state['values']['msdyn_endpoint']);
+
+  drupal_set_message(t('Data saved.'));
+
+  // Now, if endpoint is not empty, go test!
+  if (variable_get('msdyn_endpoint', FALSE)) {
+    _ivan_msdyn_datatest(variable_get('msdyn_endpoint'), variable_get('msdyn_user'), variable_get('msdyn_pass'));
+  }
+
+}
+
+/* Test connector Fn */
+function _ivan_msdyn_datatest($endpoint, $user, $pass) {
+  
+  // headers: request json format.
+  $options['headers'] = array(
+    'Accept' => 'application/json',
+    'Content-Type' => 'application/json',
+  );
+  // Misc cURL options.
+  $options['curl_opts'] = array(
+    CURLOPT_HTTPAUTH => CURLAUTH_NTLM,
+    CURLOPT_USERPWD => $user . ':' . $pass,
+  );
+
+  return chr_curl_http_request($endpoint, $options);
+  
+}
+
+function _ivan_msdyn_test_form($form, &$form_state) {
+  $endpoint = variable_get('msdyn_endpoint', FALSE);
+  if (!$endpoint) {
+    // Should I do something here??
+  }
+  $form = array();
+  if (isset($form_state['storage'])) {
+    $form['msdyn_collapse'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Result of the query:'),
+      '#collapsible' => true,
+      '#collapsed' => false,
+    );
+    $form['msdyn_collapse']['msdyn_result'] = array(
+      '#markup' => $form_state['storage']['result'],
+    );
+  }
+  $form['msdyn_query'] = array(
+    '#title' => t('Enter the query parameters, skipping the URL'),
+    '#type' => 'textarea',
+    '#description' => t('Your endpoint is @ep', array( '@ep' => $endpoint )),
+  );
+  $form['msdyn_submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Heat!'),
+  );
+  return $form;
+}
+
+function _ivan_msdyn_test_form_submit($form, &$form_state) {
+  
+  if ($url = variable_get('msdyn_endpoint', FALSE)) {
+    $url .= trim($form_state['values']['msdyn_query']);
+    $response = _ivan_msdyn_datatest($url, variable_get('msdyn_user'), variable_get('msdyn_pass'));
+  }
+  else {
+    $response = t('You haven\'t set a datapoint. Do so in Settings tab.');
+  }
+
+
+  if (module_exists('devel')) {
+    $form_state['storage']['result'] = kprint_r(json_decode($response->data), true);
+  }
+  else {
+    $form_state['storage']['result'] = '<pre>' . print_r(json_decode($response->data), true) . '</pre>';
+  }
+  // Rebuild the form.
+  $form_state['rebuild'] = TRUE;
+}
