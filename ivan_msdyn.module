@@ -115,6 +115,7 @@ function _ivan_msdyn_test_form($form, &$form_state) {
     '#title' => t('Enter the query parameters, skipping the URL'),
     '#type' => 'textarea',
     '#description' => t('Your endpoint is @ep', array( '@ep' => $endpoint )),
+    '#default_value' => isset($form_state['storage']) ? $form_state['storage']['query'] : '',
   );
   $form['msdyn_submit'] = array(
     '#type' => 'submit',
@@ -141,5 +142,6 @@ function _ivan_msdyn_test_form_submit($form, &$form_state) {
     $form_state['storage']['result'] = '<pre>' . print_r(json_decode($response->data), true) . '</pre>';
   }
   // Rebuild the form.
+  $form_state['storage']['query'] = $form_state['values']['msdyn_query'];
   $form_state['rebuild'] = TRUE;
 }
