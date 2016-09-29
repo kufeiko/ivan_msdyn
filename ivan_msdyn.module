@@ -114,7 +114,7 @@ function _ivan_msdyn_test_form($form, &$form_state) {
   $form['msdyn_query'] = array(
     '#title' => t('Enter the query parameters, skipping the URL'),
     '#type' => 'textarea',
-    '#description' => t('Your endpoint is @ep', array( '@ep' => $endpoint )),
+    '#description' => t('Your endpoint is <strong>@ep</strong>', array( '@ep' => $endpoint )),
     '#default_value' => isset($form_state['storage']) ? $form_state['storage']['query'] : '',
   );
   $form['msdyn_submit'] = array(
@@ -127,7 +127,7 @@ function _ivan_msdyn_test_form($form, &$form_state) {
 function _ivan_msdyn_test_form_submit($form, &$form_state) {
   
   if ($url = variable_get('msdyn_endpoint', FALSE)) {
-    $url .= trim($form_state['values']['msdyn_query']);
+    $url .= str_replace(' ', '%20', trim($form_state['values']['msdyn_query']));
     $response = _ivan_msdyn_datatest($url, variable_get('msdyn_user'), variable_get('msdyn_pass'));
   }
   else {
