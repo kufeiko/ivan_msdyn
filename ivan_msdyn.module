@@ -25,7 +25,7 @@ function ivan_msdyn_menu() {
 }
 
 /* 
- * callback for settings form 
+ * callback for settings form.
  */
 function _ivan_msdyn_settings_form($form, &$form_state) {
   // url: http://s-cnect-crmdev1:5555/SRM/
@@ -57,7 +57,7 @@ function _ivan_msdyn_settings_form($form, &$form_state) {
 }
 
 /* 
- * Submit for settings form 
+ * Submit for settings form.
  */
 function _ivan_msdyn_settings_form_submit($form, &$form_state) {
   variable_set('msdyn_user', $form_state['values']['msdyn_user']);
